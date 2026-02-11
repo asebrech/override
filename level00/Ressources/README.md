@@ -1,12 +1,12 @@
-# Level00 - Hardcoded Password
+# 🔐 Level00 - Hardcoded Password
 
-![Helldivers Salute](https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExaW03Z2o0bWdvdGxocG9xOWlsNGdhZXR0Y3E3cmFjcWI5MzI3OGo3dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YN1eB6slBDeNHr1gjs/giphy.gif)
+![Helldivers Salute](https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExejJwMnpmeXZ0dHp1enptbDE2am9la2Z4Ymg0eXczcmRiNzFqczJjMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VJN5s9dNGXLDqkLYF4/giphy.gif)
 
-Welcome to OverRide! Level00 is a warm-up challenge that introduces the concept of hardcoded credentials - a common security vulnerability in real-world applications.
+Welcome to OverRide! Time to crack your first challenge!
 
-## Binary Analysis
+## 📋 Binary Analysis
 
-### Decompiled Code
+### 🔍 Decompiled Code
 
 ```c
 int main(void)
@@ -38,7 +38,7 @@ int main(void)
 3. **Reward**: Spawns a shell via `system("/bin/sh")` on success
 4. **SUID Bit**: The binary runs with level01 privileges
 
-## Vulnerability
+## 🚨 Vulnerability
 
 ### The Problem: Hardcoded Credentials
 
@@ -54,46 +54,17 @@ In Ghidra, simply hover over the hexadecimal constant `0x149c` and it will displ
 
 That's it! Ghidra does the conversion for you.
 
-## How the Exploit Works
+## 🎯 The Attack
 
-### Step-by-Step Execution Flow
+Simple and straightforward:
 
-```
-┌─────────────────────────────────────┐
-│  1. Binary runs with SUID bit       │
-│     (level01 privileges)            │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  2. Prompt for password             │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  3. User enters: 5276               │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  4. Comparison: 5276 == 0x149c?     │
-│     YES ✓                           │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  5. system("/bin/sh") executes      │
-│     Shell inherits level01 privs    │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  6. Read /home/users/level01/.pass  │
-│     Get flag for next level         │
-└─────────────────────────────────────┘
-```
+1. **Binary runs with SUID** - Inherits level01 privileges
+2. **User enters: 5276** - The magic number
+3. **Comparison succeeds** - `5276 == 0x149c` ✓
+4. **Shell spawned** - `system("/bin/sh")` with level01 privileges
+5. **Flag retrieved** - Read `/home/users/level01/.pass`
 
-## Exploit
+## 💣 Exploit
 
 ### Connect and Execute
 
@@ -122,19 +93,13 @@ uSq2ehEGT6c9S24zbshexZQBXUGrncxn5sD5QfGL
 
 ---
 
-> **Pro Tip**: Hardcoded credentials are a [CWE-798](https://cwe.mitre.org/data/definitions/798.html) vulnerability. Always store secrets in environment variables, secure vaults (like HashiCorp Vault), or encrypted configuration files.
+> 💡 **Pro Tip**: Hardcoded credentials are a [CWE-798](https://cwe.mitre.org/data/definitions/798.html) vulnerability. Always use secure credential storage like environment variables or vaults!
 
-> **Security Note**: Modern authentication systems use:
-> - Hashed passwords with salt (bcrypt, Argon2)
-> - Multi-factor authentication (MFA)
-> - Key derivation functions (PBKDF2, scrypt)
-> - Never store passwords in plaintext or as reversible constants
+## 🎉 Victory!
 
-## Victory!
+![Helldivers Celebration](https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExempicnBhODF0Y3BrZG5zaWIzMmM2MWExdDZuYWNnYWJrdnRtYXg4MyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/MlyicdUndRbn5zUiAL/giphy.gif)
 
-![Helldivers Victory](https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTczOXJ1cDdkOWJ2c2d3MHJxN3U2ZjBsaWUwbzUydmtoNGEwMXNtNCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/mXnO9IiWWarkI/giphy.gif)
-
-**Flag captured!**
+**Flag captured!** 🚩
 
 ```
 uSq2ehEGT6c9S24zbshexZQBXUGrncxn5sD5QfGL
