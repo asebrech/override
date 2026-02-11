@@ -117,6 +117,10 @@ Target[0]    = 'C' = 0x43
 Key = 0x51 ^ 0x43 = 0x12 = 18 (decimal)
 ```
 
+**Helpful Tools:**
+- Convert ASCII to Hex: [RapidTables ASCII to Hex](https://www.rapidtables.com/convert/number/ascii-to-hex.html)
+- Calculate XOR: [XOR Calculator](https://xor.pw/#)
+
 ### Step 2: Verify the Key
 
 Let's verify with all characters:
@@ -154,6 +158,9 @@ password = 0x1337d00d - 0x12
 password = 0x1337cffb
 password = 322424827 (decimal)
 ```
+
+**Helpful Tool:**
+- Hex Subtraction Calculator: [Calculator.net Hex Calculator](https://www.calculator.net/hex-calculator.html)
 
 ### Execution Flow
 

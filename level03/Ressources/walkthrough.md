@@ -47,6 +47,10 @@ key = 0x12
 key = 18 (decimal)
 ```
 
+**Helpful Tools:**
+- Convert ASCII to Hex: https://www.rapidtables.com/convert/number/ascii-to-hex.html
+- Calculate XOR: https://xor.pw/#
+
 ## 5. Verify the key
 
 Check multiple characters:
@@ -71,6 +75,9 @@ password = 0x1337d00d - 0x12
 password = 0x1337cffb
 password = 322424827 (decimal)
 ```
+
+**Helpful Tool:**
+- Hex Subtraction Calculator: https://www.calculator.net/hex-calculator.html
 
 ## 7. Connect to the VM
 

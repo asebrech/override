@@ -14,27 +14,6 @@
 #include <string.h>
 #include <time.h>
 
-void clear_stdin(void)
-{
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
-
-unsigned int get_unum(void)
-{
-    unsigned int num = 0;
-    fflush(stdout);
-    scanf("%u", &num);
-    clear_stdin();
-    return num;
-}
-
-void prog_timeout(void)
-{
-    // System call to exit
-    exit(1);
-}
-
 int decrypt(int key)
 {
     // Encrypted string (XOR cipher)
