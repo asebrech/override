@@ -155,7 +155,7 @@ Password: test
 
 ### Decoding Little-Endian Hex
 
-Each 8-byte value is stored in little-endian format (least significant byte first).
+Each 8-byte value is stored in little-endian format (least significant byte first). Use a [hex-to-ASCII converter](https://www.rapidtables.com/convert/number/hex-to-ascii.html) to convert the bytes:
 
 | Position | Hex Value | Bytes (LE) | ASCII String |
 |----------|-----------|------------|--------------|

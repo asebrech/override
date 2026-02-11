@@ -48,7 +48,7 @@ ssh level02@localhost -p 2222
 
 ## 5. Decode the leaked password
 
-Each leaked value is 8 bytes in **little-endian** format. Convert to ASCII:
+Each leaked value is 8 bytes in **little-endian** format. Convert to ASCII using a [hex-to-ASCII converter](https://www.rapidtables.com/convert/number/hex-to-ascii.html):
 
 | Position | Hex Value | Bytes (Little-Endian) | ASCII |
 |----------|-----------|----------------------|-------|
