@@ -50,6 +50,7 @@ key = 18 (decimal)
 **Helpful Tools:**
 - Convert ASCII to Hex: https://www.rapidtables.com/convert/number/ascii-to-hex.html
 - Calculate XOR: https://xor.pw/#
+- XOR Encrypt/Decrypt: https://md5decrypt.net/en/Xor/ (verify encryption with text and key)
 
 ## 5. Verify the key
 
@@ -62,6 +63,8 @@ Check multiple characters:
 | 2 | 0x7c | 'n' (0x6e) | 0x7c ^ 0x12 = 0x6e ✓ |
 
 **Key = 18 is correct!**
+
+You can verify this by entering "Congratulations!" and key "18" at https://md5decrypt.net/en/Xor/ to get back the encrypted bytes.
 
 ## 6. Calculate the required input
 

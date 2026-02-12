@@ -120,6 +120,7 @@ Key = 0x51 ^ 0x43 = 0x12 = 18 (decimal)
 **Helpful Tools:**
 - Convert ASCII to Hex: [RapidTables ASCII to Hex](https://www.rapidtables.com/convert/number/ascii-to-hex.html)
 - Calculate XOR: [XOR Calculator](https://xor.pw/#)
+- XOR Encrypt/Decrypt: [MD5Decrypt XOR Tool](https://md5decrypt.net/en/Xor/) - Verify encryption with text and key
 
 ### Step 2: Verify the Key
 
@@ -145,6 +146,8 @@ Let's verify with all characters:
 | 15 | 0x33 | '!' | 0x33 ^ 0x12 | 0x21 ('!') | ✓ |
 
 **Perfect match! Key = 18 (0x12)**
+
+> 💡 **Verification Tip**: You can verify this encryption/decryption using [MD5Decrypt XOR Tool](https://md5decrypt.net/en/Xor/). Enter the text "Congratulations!" and key "18" to get back the encrypted hex bytes.
 
 ### Step 3: Calculate Required Input
 
