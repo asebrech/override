@@ -59,7 +59,7 @@ Saved registers:
  eip at 0xffffcf2c
 ```
 
-Find the data array start:
+Find the data array start (0x1bc = 444 bytes):
 ```bash
 (gdb) p/x $ebp - 0x1bc
 $1 = 0xffffcd6c
