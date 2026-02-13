@@ -164,21 +164,3 @@ cat /home/users/level07/.pass
 ```
 GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8
 ```
-
-## Notes
-
-### Anti-Debugging Bypass
-
-The `ptrace(PTRACE_TRACEME)` call prevents debugging:
-- Returns `-1` if already being traced (e.g., in GDB)
-- Shows "TAMPERING DETECTED" message and fails authentication
-
-**Solution:** Run the program normally (not in GDB). Since we have a keygen, we don't need to debug the binary.
-
-### Algorithm Properties
-
-The serial generation is:
-- **Deterministic**: Same login always produces same serial
-- **Irreversible**: Given a serial, can't easily derive the login
-- **Character-dependent**: Each character affects the final serial
-- **Position-sensitive**: Character order matters (4th char is seed)
