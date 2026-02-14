@@ -5,7 +5,7 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git pkgs.qemu pkgs.ghidra ];
+  packages = [ pkgs.git pkgs.qemu pkgs.ghidra pkgs.sshpass ];
 
   # https://devenv.sh/languages/
   # languages.rust.enable = true;

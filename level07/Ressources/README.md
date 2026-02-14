@@ -202,34 +202,34 @@ Using GDB:
 
 ```bash
 gdb ./level07
-(gdb) break main
+(gdb) break *main+110
 (gdb) run
 (gdb) info frame
 ```
 
-**Output:**
+**Why `*main+110`?** This breaks after stack allocation and alignment, giving us the final stack layout.
+
+**Output (example):**
 ```
 Saved registers:
- eip at 0xffffcf2c
+  ebp at 0xffffdcb8, eip at 0xffffdcbc
 ```
 
-**Find where the data array starts:**
+Note the saved EIP address: `eip at 0xffffdcbc`
 
-In Ghidra, look at `main()`'s local variables:
-```c
-undefined4 local_1bc [100];  // The data array at EBP - 0x1bc
-```
-
-Calculate the address in GDB (0x1bc = 444 bytes):
+**Find data array address:**
 ```bash
-(gdb) p/x $ebp - 0x1bc
-$1 = 0xffffcd6c
+(gdb) p/x $esp + 0x24
+$1 = 0xffffdaf4
 ```
 
 **Calculate offset:**
+```bash
+(gdb) p/d (0xffffdcbc - 0xffffdaf4) / 4
+$2 = 114
 ```
-(0xffffcf2c - 0xffffcd6c) / 4 = 456 / 4 = 114
-```
+
+Or manually: `(0xffffdcbc - 0xffffdaf4) = 456 bytes, 456 / 4 = 114`
 
 The saved EIP is at **index 114**. Problem: `114 % 3 == 0` (blocked!)
 

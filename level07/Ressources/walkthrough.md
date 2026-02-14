@@ -48,38 +48,36 @@ ssh level07@localhost -p 2222
 # Password: GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8
 
 gdb ./level07
-(gdb) break main
+(gdb) break *main+110
 (gdb) run
 (gdb) info frame
 ```
 
-**Output:**
+**Why `*main+110`?** This breaks after stack allocation and alignment, giving us the final stack layout.
+
+**Output (example):**
 ```
 Saved registers:
- eip at 0xffffcf2c
+  ebp at 0xffffdcb8, eip at 0xffffdcbc
 ```
 
-**Find where the data array starts:**
+Note the saved EIP address: `eip at 0xffffdcbc`
 
-In Ghidra, look at the `main()` function's local variables. You'll see:
-```c
-undefined4 local_1bc [100];  // This is the data array
-```
-
-The `_1bc` tells you it's at **EBP - 0x1bc** (0x1bc = 444 bytes below base pointer).
-
-Now in GDB, calculate the actual address (0x1bc = 444 bytes):
+**Find the data array address:**
 ```bash
-(gdb) p/x $ebp - 0x1bc
-$1 = 0xffffcd6c
+(gdb) p/x $esp + 0x24
+$1 = 0xffffdaf4
 ```
 
-**Calculate EIP offset:**
-```
-(0xffffcf2c - 0xffffcd6c) / 4 = 456 / 4 = 114
+**Calculate the offset:**
+```bash
+(gdb) p/d (0xffffdcbc - 0xffffdaf4) / 4
+$2 = 114
 ```
 
-The saved EIP is at **index 114**.
+Or manually: `(0xffffdcbc - 0xffffdaf4) = 456 bytes, 456 / 4 = 114`
+
+**The saved EIP is at index 114.**
 
 **Problem:** `114 % 3 == 0` (blocked by security check)
 
