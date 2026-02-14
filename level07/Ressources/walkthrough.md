@@ -64,6 +64,8 @@ Saved registers:
 Note the saved EIP address: `eip at 0xffffdcbc`
 
 **Find the data array address:**
+
+From the assembly (`lea [ESP + 0x24]`), the data array is at ESP + 0x24:
 ```bash
 (gdb) p/x $esp + 0x24
 $1 = 0xffffdaf4
