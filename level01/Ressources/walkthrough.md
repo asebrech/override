@@ -4,7 +4,7 @@
 
 ```bash
 scp -P 2222 level01@localhost:~/level01 .
-# Password: PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+# Password: uSq2ehEGT6c9S24zbshexZQBXUGrncxn5sD5QfGL
 ```
 
 ## 2. Analyze with Ghidra
@@ -50,7 +50,7 @@ fgets(password, 100, stdin);  // Reads 100 bytes into 64-byte buffer!
 
 ```bash
 ssh level01@localhost -p 2222
-# Password: PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+# Password: uSq2ehEGT6c9S24zbshexZQBXUGrncxn5sD5QfGL
 ```
 
 ## 7. Execute the exploit

