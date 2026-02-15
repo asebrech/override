@@ -147,10 +147,12 @@ Using Ghidra or objdump:
 objdump -R level05 | grep exit
 ```
 
-**Result:**
+**Output:**
 ```
-exit@GOT: 0x080497e0
+080497e0 R_386_JUMP_SLOT   exit
 ```
+
+**Target address:** `exit@GOT` = `0x080497e0`
 
 **Address safety check:**
 - `0x08` ✅ Safe (not in `0x41-0x5A` range)

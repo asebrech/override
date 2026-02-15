@@ -75,15 +75,20 @@ Confirms:
 
 ## 7. Find GOT addresses
 
-Use Ghidra or objdump:
+Use objdump to find the exit function's GOT entry:
 
 ```bash
-objdump -R level05
+objdump -R level05 | grep exit
 ```
 
-**Key addresses:**
-- `exit@GOT`: `0x080497e0`
-- `printf@GOT`: `0x080497d4`
+**Output:**
+```
+080497e0 R_386_JUMP_SLOT   exit
+```
+
+**Target address:** `exit@GOT` = `0x080497e0`
+
+We'll overwrite this address to redirect execution when `exit()` is called.
 
 ## 8. Create shellcode in environment variable
 
