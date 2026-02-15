@@ -371,16 +371,40 @@ Input processing:
 
 ### Format String Short Writes
 
-When writing large values with `%n`, we risk printing millions of bytes. Short writes (`%hn`) solve this:
+**What is `0xffffdd96`?**
+
+This is the **memory address of our shellcode** (middle of the NOP sled in the environment variable). We need to write this address to `exit@GOT` so when the program calls `exit()`, it jumps to our shellcode instead.
+
+**Why write in two 2-byte chunks?**
+
+The `%n` specifier writes the number of bytes printed so far. To write `0xffffdd96` (4,294,958,486 in decimal), we'd need to print over **4 billion characters** - which is impractical and would hang the program.
+
+Solution: Split the 4-byte address into two 2-byte writes using `%hn` (short write):
 
 ```
-Full write (%n):  Write 4 bytes (0xffffdd96 = 4294958486 bytes to print!)
-Short write (%hn): Write 2 bytes at a time
-  First write:  0xdd96 (56726 bytes)
-  Second write: 0xffff (65535 bytes)
+Address: 0xffffdd96
+         ^^^^  ^^^^
+         |     |
+         |     +-- Lower 2 bytes: 0xdd96 = 56,726 (print 56,726 chars)
+         +-------- Upper 2 bytes: 0xffff = 65,535 (print 65,535 chars)
+
+Write to two adjacent addresses:
+  0x080497e0 ← 0xdd96  (exit@GOT lower bytes)
+  0x080497e2 ← 0xffff  (exit@GOT upper bytes)
+
+Result: exit@GOT = 0xffffdd96 ✅
 ```
 
-By splitting the write into two 2-byte operations, we keep the exploit practical and fast.
+**Why this works:**
+
+```
+Full write (%n):  Write 4 bytes → need to print 4,294,958,486 characters ❌
+Short write (%hn): Write 2 bytes at a time:
+  First write:  0xdd96 → print 56,726 characters ✅
+  Second write: 0xffff → print 65,535 characters ✅
+```
+
+By splitting the write into two 2-byte operations, we keep the exploit practical and fast (under 130KB of output instead of 4GB!).
 
 ### How Printf Format String Exploitation Works
 
